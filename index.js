@@ -90,8 +90,8 @@ async function handleEvent(event) {
   if (!message.startsWith('/')) {
     const isJapanese = isMostlyJapanese(message);
     const prompt = isJapanese
-      ? `Rewrite this Japanese message in English`
-      : `Rewrite this non-Japanese message in Japanese`;
+      ? `Rewrite this Japanese message in a culturally appropriate English`
+      : `Rewrite this non-Japanese message in culturally appropriate Japanese`;
     const reply = await processWithQwen(prompt + `: "${message}". Respond only with the rewritten text.`);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
@@ -99,7 +99,7 @@ async function handleEvent(event) {
   // Commande /q : Réponse à une question
   if (message.startsWith('/q')) {
     const question = message.slice(3).trim();
-    const prompt = `Answer the following question: "${question}". Respond only with the answer.`;
+    const prompt = `do this: "${question}". Respond only with the answer and without "`;
     const reply = await processWithQwen(prompt);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
