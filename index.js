@@ -92,7 +92,7 @@ async function handleEvent(event) {
     const prompt = isJapanese
       ? `Rewrite this Japanese message in a culturally appropriate English`
       : `Rewrite this non-Japanese message in culturally appropriate Japanese`;
-    const reply = await processWithQwen(prompt + `: "${message}". Respond only with the rewritten text.`);
+    const reply = await processWithQwen(prompt + `: "${message}". Respond only with the rewritten text and without "`);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
 
