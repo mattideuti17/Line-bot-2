@@ -90,8 +90,8 @@ async function handleEvent(event) {
   if (!message.startsWith('/')) {
     const isJapanese = isMostlyJapanese(message);
     const prompt = isJapanese
-      ? `Rewrite this Japanese message in English, respond only with the rewritten text "`
-      : `Rewrite this non-Japanese message in japanese, respond only with the rewritten text"`;
+      ? `adapte ceci en japonais sans ajouter de texte ou de "`
+      : `adapte ceci en anglais sans ajouter de texte ou de "`;
     const reply = await processWithQwen(prompt + `: "${message}".`);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
