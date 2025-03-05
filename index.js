@@ -91,7 +91,7 @@ async function handleEvent(event) {
     const isJapanese = isMostlyJapanese(message);
     const prompt = isJapanese
       ? `Adapt this "${message}" in english without adding anything else`
-      : `Adapt this "${message}" in japonais without adding anything else`;
+      : `Adapt this "${message}" in japanese without adding anything else`;
     const reply = await processWithQwen(prompt);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
