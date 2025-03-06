@@ -32,11 +32,11 @@ const APIS = {
   },
   GEMINI_2_FLASH: {
     key: process.env.GEMINI_2_FLASH_API_KEY,
-    model: 'google/gemini-2.0-flash'
+    model: 'google/gemini-2.0-flash-001'
   },
   GEMINI_1_5: {
     key: process.env.GEMINI_1_5_API_KEY,
-    model: 'google/gemini-1.5'
+    model: 'google/gemini-flash-1.5-8b'
   }
 };
 
