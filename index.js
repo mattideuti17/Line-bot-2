@@ -41,8 +41,10 @@ const APIS = {
 };
 
 // Choix des APIs à utiliser pour chaque usage
-const AUTO_API = APIS.GEMINI_2_FLASH;         // Pour les messages automatiques (adaptation/traduction)
-const QUESTION_API = APIS.GPT4O_MINI_API_KEY; // Pour la commande /q (réponses aux questions)
+// Messages normaux => Gemini 2 Flash
+const AUTO_API = APIS.GEMINI_2_FLASH;
+// Commande /q => GPT-4o-mini
+const QUESTION_API = APIS.GPT4O_MINI;
 
 // Middleware pour parser les requêtes
 app.use(express.json());
@@ -86,6 +88,7 @@ async function processWithAPI(apiConfig, prompt) {
         }
       }
     );
+
     let reply = response.data.choices[0].message.content.trim();
 
     // Suppression du premier et dernier caractère si la réponse est encadrée par "" ou 「」
@@ -116,7 +119,7 @@ async function handleEvent(event) {
   const message = event.message.text;
   console.log('Message reçu de LINE:', message);
 
-  // Cas sans commande : réécriture/traduction automatique
+  // Cas sans commande => réécriture/traduction automatique (Gemini 2)
   if (!message.startsWith('/')) {
     const isJapanese = isMostlyJapanese(message);
     const prompt = isJapanese
@@ -126,7 +129,7 @@ async function handleEvent(event) {
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
 
-  // Commande /q : répondre à une question
+  // Commande /q => répondre à une question (GPT-4o-mini)
   if (message.startsWith('/q')) {
     const question = message.slice(3).trim();
     const prompt = `Answer this: "${question}". Respond only with the answer and nothing else.`;
