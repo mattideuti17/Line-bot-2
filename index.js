@@ -2,6 +2,9 @@ const express = require('express');
 const line = require('@line/bot-sdk');
 const axios = require('axios');
 
+// URL fixe pour OpenRouter (chat completions)
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
 // Fonction pour détecter si un message est majoritairement en japonais (au moins 30 %)
 function isMostlyJapanese(message) {
   if (!message || typeof message !== 'string') return false;
@@ -14,22 +17,38 @@ function isMostlyJapanese(message) {
 
 const app = express();
 
-// Configuration LINE à partir des Secrets
+// Configuration LINE à partir des variables d'environnement
 const config = {
   channelSecret: process.env.LINE_CHANNEL_SECRET,
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN
 };
 const client = new line.Client(config);
 
-// Configuration OpenRouter (GPT-4o Mini)
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+// Configuration des 3 APIs potentielles (uniquement la clé et le modèle)
+const APIS = {
+  GPT4O_MINI: {
+    key: process.env.GPT4O_MINI_API_KEY,
+    model: 'openai/gpt-4o-mini'
+  },
+  GEMINI_2_FLASH: {
+    key: process.env.GEMINI_2_FLASH_API_KEY,
+    model: 'google/gemini-2.0-flash'
+  },
+  GEMINI_1_5: {
+    key: process.env.GEMINI_1_5_API_KEY,
+    model: 'google/gemini-1.5'
+  }
+};
+
+// Choix des APIs à utiliser pour chaque usage
+const AUTO_API = APIS.GEMINI_2_FLASH;         // Pour les messages automatiques (adaptation/traduction)
+const QUESTION_API = APIS.GPT4O_MINI_API_KEY; // Pour la commande /q (réponses aux questions)
 
 // Middleware pour parser les requêtes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Route racine pour répondre aux pings (par exemple, UptimeRobot)
+// Route racine pour répondre aux pings (ex. UptimeRobot)
 app.get('/', (req, res) => res.sendStatus(200));
 
 // Route Webhook LINE
@@ -42,65 +61,76 @@ app.post('/webhook', (req, res) => {
     });
 });
 
-// Fonction de traitement avec GPT-4o Mini via OpenRouter
-async function processWithQwen(prompt) {
+// Fonction générique pour traiter un prompt via l'API choisie
+async function processWithAPI(apiConfig, prompt) {
   try {
-    console.log('Prompt envoyé à GPT-4o Mini:', prompt); // Débogage
+    console.log('Prompt envoyé à l’API:', prompt);
     const response = await axios.post(
-      OPENROUTER_API_URL,
+      OPENROUTER_API_URL, // URL fixe
       {
-        model: 'openai/gpt-4o-mini',
+        model: apiConfig.model,
         messages: [
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 300 // Gardé à 300 pour permettre des réponses précises
+        max_tokens: 300
       },
       {
         headers: {
-          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          Authorization: `Bearer ${apiConfig.key}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': 'https://my-line-bot.example.com', // Optionnel
-          'X-Title': 'Line Qwen Bot' // Optionnel
+          'X-Title': 'Line Bot' // Optionnel
         }
       }
     );
-    const reply = response.data.choices[0].message.content.trim();
-    console.log('Réponse de GPT-4o Mini:', reply); // Débogage
+    let reply = response.data.choices[0].message.content.trim();
+
+    // Suppression du premier et dernier caractère si la réponse est encadrée par "" ou 「」
+    if (
+      (reply.startsWith('"') && reply.endsWith('"')) ||
+      (reply.startsWith('「') && reply.endsWith('」'))
+    ) {
+      reply = reply.substring(1, reply.length - 1).trim();
+    }
+
+    console.log('Réponse de l’API:', reply);
     return reply;
   } catch (error) {
-    const errorMessage = error.response ? error.response.data.message || error.response.data.error : error.message;
-    console.error('Erreur OpenRouter:', errorMessage);
+    const errorMessage = error.response
+      ? error.response.data.message || error.response.data.error
+      : error.message;
+    console.error('Erreur API:', errorMessage);
     return 'Erreur de traitement';
   }
 }
 
-// Gestion des événements LINE
+// Gestionnaire d'événements LINE
 async function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
     return Promise.resolve(null);
   }
 
   const message = event.message.text;
-  console.log('Message reçu de LINE:', message); // Débogage
+  console.log('Message reçu de LINE:', message);
 
-  // Réécriture automatique (sans commande)
+  // Cas sans commande : réécriture/traduction automatique
   if (!message.startsWith('/')) {
     const isJapanese = isMostlyJapanese(message);
     const prompt = isJapanese
-      ? `Adapt this "${message}" in english without adding anything else`
-      : `Adapt this "${message}" in japanese without adding anything else`;
-    const reply = await processWithQwen(prompt);
+      ? `Adapt this "${message}" in English without adding anything else`
+      : `Adapt this "${message}" in Japanese without adding anything else`;
+    const reply = await processWithAPI(AUTO_API, prompt);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
 
-  // Commande /q : Réponse à une question
+  // Commande /q : répondre à une question
   if (message.startsWith('/q')) {
     const question = message.slice(3).trim();
-    const prompt = `answer to this: "${question}". Respond only with the answer and without "`;
-    const reply = await processWithQwen(prompt);
+    const prompt = `Answer this: "${question}". Respond only with the answer and nothing else.`;
+    const reply = await processWithAPI(QUESTION_API, prompt);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
 }
