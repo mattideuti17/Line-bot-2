@@ -99,7 +99,7 @@ async function handleEvent(event) {
   // Commande /q : Réponse à une question
   if (message.startsWith('/q')) {
     const question = message.slice(3).trim();
-    const prompt = "${question}". Respond only with the answer`;
+    const prompt = `answer to this: "${question}". Respond only with the answer and without "`;
     const reply = await processWithQwen(prompt);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
