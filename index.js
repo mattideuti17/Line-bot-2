@@ -67,11 +67,7 @@ async function processWithQwen(prompt) {
         }
       }
     );
-    let reply = response.data.choices[0].message.content.trim();
-    // Suppression des guillemets encadrant la réponse, si présents
-    if (reply.startsWith('"') && reply.endsWith('"')) {
-      reply = reply.substring(1, reply.length - 1).trim();
-    }
+    const reply = response.data.choices[0].message.content.trim();
     console.log('Réponse de GPT-4o Mini:', reply); // Débogage
     return reply;
   } catch (error) {
@@ -103,7 +99,7 @@ async function handleEvent(event) {
   // Commande /q : Réponse à une question
   if (message.startsWith('/q')) {
     const question = message.slice(3).trim();
-    const prompt = `"${question}". Respond only with the answer."`;
+    const prompt = "${question}". Respond only with the answer`;
     const reply = await processWithQwen(prompt);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
