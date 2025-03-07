@@ -136,8 +136,8 @@ async function handleEvent(event) {
   if (!message.startsWith('/')) {
     const isJapanese = isMostlyJapanese(message);
     const prompt = isJapanese
-      ? `Adapt this "${message}" in English without adding anything else`
-      : `Adapt this "${message}" in Japanese without adding anything else`;
+      ? `Adapt this "${message}" in English en répondant uniquement la traduction`
+      : `Adapt this "${message}" in Japanese en répondant uniquement la traduction`;
     const reply = await processWithAPI(AUTO_API, prompt);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
