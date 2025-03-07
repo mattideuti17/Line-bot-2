@@ -67,18 +67,31 @@ app.post('/webhook', (req, res) => {
 async function processWithAPI(apiConfig, prompt) {
   try {
     console.log('Prompt envoyé à l’API:', prompt);
+
+    // Préparation du corps de la requête
+    const requestBody = {
+      model: apiConfig.model,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 300
+    };
+
+    // Si on utilise un modèle Gemini, on fixe temperature = 0 (limite la créativité)
+    if (
+      apiConfig.model === 'google/gemini-2.0-flash-001' ||
+      apiConfig.model === 'google/gemini-flash-1.5-8b'
+    ) {
+      requestBody.temperature = 0;
+    }
+
+    // Appel à l'API OpenRouter
     const response = await axios.post(
-      OPENROUTER_API_URL, // URL fixe
-      {
-        model: apiConfig.model,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 300
-      },
+      OPENROUTER_API_URL,
+      requestBody,
       {
         headers: {
           Authorization: `Bearer ${apiConfig.key}`,
@@ -123,8 +136,8 @@ async function handleEvent(event) {
   if (!message.startsWith('/')) {
     const isJapanese = isMostlyJapanese(message);
     const prompt = isJapanese
-      ? `translate this "${message}" in English without adding any other text`
-      : `translate this "${message}" in Japanese without adding any other text`;
+      ? `Adapt this "${message}" in English without adding anything else`
+      : `Adapt this "${message}" in Japanese without adding anything else`;
     const reply = await processWithAPI(AUTO_API, prompt);
     return client.replyMessage(event.replyToken, { type: 'text', text: reply });
   }
