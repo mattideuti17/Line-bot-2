@@ -42,7 +42,7 @@ const APIS = {
 
 // Choix des APIs à utiliser pour chaque usage
 // Messages normaux => Gemini 2 Flash
-const AUTO_API = APIS.GEMINI_2_FLASH;
+const AUTO_API = APIS.GPT4O_MINI;
 // Commande /q => GPT-4o-mini
 const QUESTION_API = APIS.GPT4O_MINI;
 
